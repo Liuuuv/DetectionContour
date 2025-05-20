@@ -1,0 +1,41 @@
+import matplotlib.pyplot as plt
+import numpy as np
+
+image = plt.imread("justdisappear.png")     # taille (573, 640, 3)
+
+
+
+
+image = image[::4, ::4, :]  # 5:taille (115, 128, 3), 4:taille (144, 160, 3)
+
+class Filter:
+    def __init__(self, center: tuple, array: np.ndarray):
+        self.center = center
+        self.array = array
+        self.shape = (len(array[0][1]), len(array[0]))
+
+
+def black_and_white(img_):
+    img = img_.copy()
+    for i in range(len(img_)):
+        for j in range(len(img_[i])):
+            mean = np.mean(img_[i,j])
+            img[i,j] = [mean, mean, mean]
+    return img
+
+# image = black_and_white(image)
+
+def convolution(img_: np.ndarray, filter: Filter):
+    img = img_.copy()
+    for i in range(len(img)):
+        for j in range(len(img[i])):
+            
+            
+    return img
+
+
+
+
+
+plt.imshow(image)
+plt.show()

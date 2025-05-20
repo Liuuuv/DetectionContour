@@ -51,9 +51,7 @@ def convolution(img_: np.ndarray, filter: Filter):  # 0 outside
                     
                     coef += img[i-k,j-l]*filter.array[k,l]
             
-            # img[i,j] = coef
-            if coef >= 0:
-                
+            img[i,j] = coef
             
     return img
 
@@ -93,7 +91,7 @@ filtery = Filter(
 #         ])
 # )
 
-image = black_and_white(image)
+# image = black_and_white(image)
 image_x = convolution(image, filterx)
 image_y = convolution(image, filtery)
 
