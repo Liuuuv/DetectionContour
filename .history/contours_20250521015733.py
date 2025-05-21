@@ -48,7 +48,7 @@ def convolution(img_: np.ndarray, filter: Filter):  # 0 outside
                     if not 0 <= i-k < img.shape[0] or not 0 <= j-l < img.shape[1]:
                         continue
 
-                    coef += img_[i-k,j-l][0]*filter.array[filter.center[0]+k,filter.center[1]+l]
+                    coef += img_[i-k,j-l][0]*filter.array[k,l]
             
             # img[i,j] = 0
             # img[i,j] = abs(coef)
@@ -96,13 +96,13 @@ filtery = Filter(
 # )
 
 image = black_and_white(image)
-image_x = convolution(image, filterx)
+# image_x = convolution(image, filterx)
 image_y = convolution(image, filtery)
 
-image = get_magnitude(image_x, image_y)
+# image = get_magnitude(image_x, image_y)
 
 
 
 
-plt.imshow(image)
+plt.imshow(image_y)
 plt.show()

@@ -97,12 +97,12 @@ filtery = Filter(
 
 image = black_and_white(image)
 image_x = convolution(image, filterx)
-image_y = convolution(image, filtery)
+# image_y = convolution(image, filtery)
 
-image = get_magnitude(image_x, image_y)
-
-
+# image = get_magnitude(image_x, image_y)
 
 
-plt.imshow(image)
+
+
+plt.imshow(image_x)
 plt.show()

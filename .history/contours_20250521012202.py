@@ -6,7 +6,7 @@ image = plt.imread("justdisappear.png")     # taille (573, 640, 3)
 
 
 
-image = image[::1, ::1, :]  # 5:taille (115, 128, 3), 4:taille (144, 160, 3)
+image = image[::3, ::3, :]  # 5:taille (115, 128, 3), 4:taille (144, 160, 3)
 
 class Filter:
     def __init__(self, center: np.ndarray, array: np.ndarray):
@@ -47,15 +47,15 @@ def convolution(img_: np.ndarray, filter: Filter):  # 0 outside
                 for l in range(-filter.left_range[1], filter.right_range[1]):
                     if not 0 <= i-k < img.shape[0] or not 0 <= j-l < img.shape[1]:
                         continue
+                    
 
-                    coef += img_[i-k,j-l][0]*filter.array[filter.center[0]+k,filter.center[1]+l]
+                    coef += img[i-k,j-l][0]*filter.array[k,l]
             
-            # img[i,j] = 0
-            # img[i,j] = abs(coef)
+            # img[i,j] = coef
             if coef >= 0:
-                img[i,j] = [0, coef, 0]
+                img[i,j] = [0, 0, coef]
             else:
-                img[i,j] = [abs(coef), 0, 0]
+                img[i,j] = [coef, 0, 0]
             
     return img
 
