@@ -4,12 +4,12 @@ import numpy as np
 import time
 from scipy.signal import fftconvolve
 
-image = plt.imread("justdisappear.png")     # taille (573, 640, 3)
+# image = plt.imread("justdisappear.png")     # taille (573, 640, 3)
 # image = plt.imread("shinsei.png")
-# image = plt.imread("upiko.png")
+image = plt.imread("upiko.png")
 
 
-image = image[::1, ::1, :]  # 5:taille (115, 128, 3), 4:taille (144, 160, 3)
+image = image[::3, ::3, :]  # 5:taille (115, 128, 3), 4:taille (144, 160, 3)
 
 
 
@@ -68,22 +68,22 @@ def convolution(img_: np.ndarray, filter: Filter):  # 0 outside
 
 
 
-def convolution(img_: np.ndarray, filter: 'Filter'):
-    if img_.ndim != 3 or img_.shape[2] != 3:
-        raise ValueError("format : HxWx3")
+# def convolution(img_: np.ndarray, filter: 'Filter'):
+#     if img_.ndim != 3 or img_.shape[2] != 3:
+#         raise ValueError("format : HxWx3")
     
-    # Extraction d'un seul canal (le vert par défaut)
-    img_gray = img_[:, :, 1].astype(np.float32)
+#     # Extraction d'un seul canal (le vert par défaut)
+#     img_gray = img_[:, :, 1].astype(np.float32)
     
-    # Application convolution FFT
-    convolved = fftconvolve(img_gray, filter.array, mode='same')
+#     # Application convolution FFT
+#     convolved = fftconvolve(img_gray, filter.array, mode='same')
     
-    # Valeur absolue et normalisation
-    # convolved = np.abs(convolved)
-    # convolved = np.clip(convolved, 0, 255).astype(img_.dtype)
+#     # Valeur absolue et normalisation
+#     # convolved = np.abs(convolved)
+#     # convolved = np.clip(convolved, 0, 255).astype(img_.dtype)
     
-    # Reconstruction des 3 canaux
-    return np.stack((convolved,)*3, axis=-1)
+#     # Reconstruction des 3 canaux
+#     return np.stack((convolved,)*3, axis=-1)
 
 
 
@@ -200,7 +200,6 @@ gaussian_filter_3x3 = Filter(
 
 plot_count = 1
 multiplot = True
-multiplot = False
 
 if multiplot:
     columns = 2
@@ -226,22 +225,15 @@ noise = np.random.normal(0, .1, image.shape)[:,:,:1]
 image += noise
 image = np.clip(image, 0, 255).astype(image.dtype)
 
-# plt.imshow(image)
-plot(image)
-
-
-
-# image0 = convolution(image, filtermean)
-# plot(image0)
-
-
-
-
-
 image0 = convolution(image, filtermean)
-
-# plt.imshow(image0)
 plot(image0)
+
+
+
+
+
+# image = convolution(image, filter)
+
 
 
 
@@ -250,19 +242,20 @@ plot(image0)
 # print(end_time - start_time)
 
 
-# image3 = convolution(image, gaussian_filter_3x3)
-# plot(image3)
+image3 = convolution(image, gaussian_filter_3x3)
+plot(image3)
 
 
 image2 = edge_detection_1(image0)
-image2 = threshold(image2, .1)
+image2 = threshold(image2, .08)
 
-plt.imshow(image2)
+
 plot(image2)
+# plt.imshow(image2)
 
-# image4 = edge_detection_1(image3)
-# image4 = threshold(image4, .1)
-# plot(image4)
+image4 = edge_detection_1(image3)
+image4 = threshold(image4, .1)
+plot(image4)
 
 if multiplot:
     plt.subplots_adjust(

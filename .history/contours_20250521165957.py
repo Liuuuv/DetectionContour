@@ -226,7 +226,6 @@ noise = np.random.normal(0, .1, image.shape)[:,:,:1]
 image += noise
 image = np.clip(image, 0, 255).astype(image.dtype)
 
-# plt.imshow(image)
 plot(image)
 
 
@@ -238,9 +237,7 @@ plot(image)
 
 
 
-image0 = convolution(image, filtermean)
-
-# plt.imshow(image0)
+image0 = convolution(image, gaussian_filter_3x3)
 plot(image0)
 
 
@@ -254,11 +251,12 @@ plot(image0)
 # plot(image3)
 
 
-image2 = edge_detection_1(image0)
-image2 = threshold(image2, .1)
+image2 = edge_detection_1(image)
+image2 = threshold(image2, .085)
+# plt.imshow(image2)
 
-plt.imshow(image2)
 plot(image2)
+# plt.imshow(image2)
 
 # image4 = edge_detection_1(image3)
 # image4 = threshold(image4, .1)

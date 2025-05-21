@@ -238,7 +238,7 @@ plot(image)
 
 
 
-image0 = convolution(image, filtermean)
+image0 = convolution(image, gaussian_filter_3x3)
 
 # plt.imshow(image0)
 plot(image0)
