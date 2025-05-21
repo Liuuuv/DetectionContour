@@ -2,8 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import time
 
-image = plt.imread("justdisappear.png")     # taille (573, 640, 3)
-# image = plt.imread("shinsei.png")
+# image = plt.imread("justdisappear.png")     # taille (573, 640, 3)
+image = plt.imread("shinsei.png")
 
 
 image = image[::1, ::1, :][..., :3]  # 5:taille (115, 128, 3), 4:taille (144, 160, 3)
@@ -100,26 +100,12 @@ def convolution(img_: np.ndarray, filter: 'Filter'):
 def get_magnitude(img_x, img_y):
     return np.sqrt(img_x**2 + img_y**2)
 
-def threshold(img, threshold):
-    
-    binary = np.where(img[:,:,0] > threshold, 255, 0)
-    return np.stack((binary,)*3, axis=-1).astype(np.uint8)
-
 def edge_detection_1(img):
     image_x = convolution(img, filterx)
     image_y = convolution(img, filtery)
 
     img_ = get_magnitude(image_x, image_y)
     return img_
-
-def plot(img):
-    if not multiplot:
-        return
-    if plot_count > rows * columns:
-        print("TOO MUCH PLOTS")
-        return
-    fig.add_subplot(rows, columns, plot_count)
-    plt.imshow(img)
 
 ## df/dx
 filterx = Filter(
@@ -147,26 +133,24 @@ filtery = Filter(
 #         ])
 # )
 
-plot_count = 0
-multiplot = False
 
-if multiplot:
-    columns = 2
-    rows = 2
-    fig = plt.figure(figsize=(rows, columns))
 
+columns = 2
+rows = 2
+fig = plt.figure(figsize=(rows, columns))
 
 
 ## black and white image
 # start_time = time.time()
 image = black_and_white(image)
 
-
+fig.add_subplot(rows, columns, 1)
+plt.imshow(image)
 
 
 image1 = edge_detection_1(image)
-image1 = threshold(image1, .065)
-plot(image1)
+fig.add_subplot(rows, columns, 3)
+plt.imshow(image1)
 
 
 ## noise
@@ -174,7 +158,8 @@ noise = np.random.normal(0, .1, image.shape)[:,:,:1]
 image += noise
 image = np.clip(image, 0, 255).astype(image.dtype)
 
-plot(image)
+fig.add_subplot(rows, columns, 2)
+plt.imshow(image)
 
 
 
@@ -191,17 +176,12 @@ plot(image)
 
 
 image2 = edge_detection_1(image)
-image2 = threshold(image2, .35)
+fig.add_subplot(rows, columns, 4)
+plt.imshow(image2)
 
 
-
-plot(image2)
-
-if multiplot:
-    plt.subplots_adjust(
-        left=0, right=1, bottom=0, top=1,
-        wspace=0, hspace=0
-    )
-
-plt.imshow(image1)
+plt.subplots_adjust(
+    left=0, right=1, bottom=0, top=1,
+    wspace=0, hspace=0
+)
 plt.show()

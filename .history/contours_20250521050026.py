@@ -165,7 +165,7 @@ image = black_and_white(image)
 
 
 image1 = edge_detection_1(image)
-image1 = threshold(image1, .065)
+image1 = threshold(image1, .04)
 plot(image1)
 
 
@@ -203,5 +203,5 @@ if multiplot:
         wspace=0, hspace=0
     )
 
-plt.imshow(image1)
+plt.imshow(image)
 plt.show()

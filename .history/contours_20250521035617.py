@@ -2,13 +2,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import time
 
-image = plt.imread("justdisappear.png")     # taille (573, 640, 3)
-# image = plt.imread("shinsei.png")
+# image = plt.imread("justdisappear.png")     # taille (573, 640, 3)
+
+image = plt.imread("shinsei.png")
 
 
 image = image[::1, ::1, :][..., :3]  # 5:taille (115, 128, 3), 4:taille (144, 160, 3)
-
-
 
 class Filter:
     def __init__(self, center: np.ndarray, array: np.ndarray):
@@ -16,7 +15,7 @@ class Filter:
         self.array = array
         self.shape = np.array((len(array), len(array[0])))
         
-        # print("shape ",self.shape)
+        print("shape ",self.shape)
         
         self.right_range = self.shape - self.center
         
@@ -88,38 +87,15 @@ def convolution(img_: np.ndarray, filter: 'Filter'):
 
 
 
-# def get_magnitude(img_x, img_y):
-#     img = img_x.copy()
-#     for i in range(len(img_x)):
-#         for j in range(len(img_x[i])):
-#             magnitude = np.sqrt(img_x[i,j]**2 + img_y[i,j]**2)
-#             # magnitude = np.abs(img_x[i,j]) + np.abs(img_y[i,j])
-#             img[i,j] = magnitude
-#     return img
-
 def get_magnitude(img_x, img_y):
-    return np.sqrt(img_x**2 + img_y**2)
+    img = img_x.copy()
+    for i in range(len(img_x)):
+        for j in range(len(img_x[i])):
+            magnitude = np.sqrt(img_x[i,j]**2 + img_y[i,j]**2)
+            # magnitude = np.abs(img_x[i,j]) + np.abs(img_y[i,j])
+            img[i,j] = magnitude
+    return img
 
-def threshold(img, threshold):
-    
-    binary = np.where(img[:,:,0] > threshold, 255, 0)
-    return np.stack((binary,)*3, axis=-1).astype(np.uint8)
-
-def edge_detection_1(img):
-    image_x = convolution(img, filterx)
-    image_y = convolution(img, filtery)
-
-    img_ = get_magnitude(image_x, image_y)
-    return img_
-
-def plot(img):
-    if not multiplot:
-        return
-    if plot_count > rows * columns:
-        print("TOO MUCH PLOTS")
-        return
-    fig.add_subplot(rows, columns, plot_count)
-    plt.imshow(img)
 
 ## df/dx
 filterx = Filter(
@@ -147,61 +123,24 @@ filtery = Filter(
 #         ])
 # )
 
-plot_count = 0
-multiplot = False
 
-if multiplot:
-    columns = 2
-    rows = 2
-    fig = plt.figure(figsize=(rows, columns))
-
-
-
-## black and white image
-# start_time = time.time()
+start_time = time.time()
 image = black_and_white(image)
 
 
 
 
-image1 = edge_detection_1(image)
-image1 = threshold(image1, .065)
-plot(image1)
-
-
-## noise
-noise = np.random.normal(0, .1, image.shape)[:,:,:1]
-image += noise
-image = np.clip(image, 0, 255).astype(image.dtype)
-
-plot(image)
-
-
-
+# image_x = convolution(image, filterx)
+# image_y = convolution(image, filtery)
 
 
 # image = convolution(image, filter)
 
 
 
+# image = get_magnitude(image_x, image_y)
 
-
-# end_time = time.time()
-# print(end_time - start_time)
-
-
-image2 = edge_detection_1(image)
-image2 = threshold(image2, .35)
-
-
-
-plot(image2)
-
-if multiplot:
-    plt.subplots_adjust(
-        left=0, right=1, bottom=0, top=1,
-        wspace=0, hspace=0
-    )
-
-plt.imshow(image1)
+end_time = time.time()
+print(end_time - start_time)
+plt.imshow(image)
 plt.show()

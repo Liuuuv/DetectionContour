@@ -165,7 +165,7 @@ image = black_and_white(image)
 
 
 image1 = edge_detection_1(image)
-image1 = threshold(image1, .065)
+image1 = threshold(image1, .01)
 plot(image1)
 
 
