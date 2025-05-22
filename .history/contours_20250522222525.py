@@ -91,25 +91,25 @@ def convolution(img_: np.ndarray, filter: Filter):  # 0 outside
 #     return img
 
 
-# def convolution(img_: np.ndarray, filter: 'Filter') -> np.ndarray:
-#     # Vérification des dimensions
-#     if img_.ndim == 3:
-#         if not np.allclose(img_[:,:,0], img_[:,:,1]) or not np.allclose(img_[:,:,0], img_[:,:,2]):
-#             raise ValueError("L'image doit être en noir et blanc (canaux identiques)")
-#         img_2d = img_[:,:,0]  # Utilise un seul canal
-#     else:
-#         img_2d = img_
+def convolution(img_: np.ndarray, filter: 'Filter') -> np.ndarray:
+    # Vérification des dimensions
+    if img_.ndim == 3:
+        if not np.allclose(img_[:,:,0], img_[:,:,1]) or not np.allclose(img_[:,:,0], img_[:,:,2]):
+            raise ValueError("L'image doit être en noir et blanc (canaux identiques)")
+        img_2d = img_[:,:,0]  # Utilise un seul canal
+    else:
+        img_2d = img_
 
-#     # Conversion en float pour la précision
-#     img_2d = img_2d.astype(np.float32)
+    # Conversion en float pour la précision
+    img_2d = img_2d.astype(np.float32)
     
-#     # Application de la convolution 2D
-#     convolved = convolve2d(img_2d, filter.array, mode='same', boundary='fill', fillvalue=0)
+    # Application de la convolution 2D
+    convolved = convolve2d(img_2d, filter.array, mode='same', boundary='fill', fillvalue=0)
     
-#     # Reconstruction des canaux si nécessaire
-#     if img_.ndim == 3:
-#         return np.stack((convolved,)*3, axis=-1).astype(np.float32)
-#     return convolved.astype(np.float32)
+    # Reconstruction des canaux si nécessaire
+    if img_.ndim == 3:
+        return np.stack((convolved,)*3, axis=-1).astype(np.float32)
+    return convolved.astype(np.float32)
 
 
 
@@ -147,7 +147,7 @@ def combine_threshold(img1, img2):
     return np.stack((binary,)*3, axis=-1).astype(np.float32)
 
 def extrem_threshold(img, threshold):
-    return np.where(img > threshold, [1,1,1], np.where(img < -threshold, [-1,-1,-1], 0)).astype(np.float32)
+    return np.where(img > threshold, [1,1,1], np.where(img < -threshold, [-255,-255,-255], 0))
     
 
 def edge_detection_1(img, plot_differential = False,show_angle = False):
@@ -192,8 +192,8 @@ def get_difference(img_, threshold):
     img = img_.copy()
     for i in range(len(img_)-1):
         for j in range(len(img_[i])-1):
-            if (img_[i+1,j] * img_[i,j] == -1).all() or (img_[i+1,j+1] * img_[i,j] == -1).all() or (img_[i,j+1] * img_[i,j] == -1).all():
-                img[i:i+2,j:j+2] = [1, 1, 1]
+            if (np.abs(img_[i+1,j] - img_[i,j]) > threshold).all() or (np.abs(img_[i+1,j+1] - img_[i,j]) > threshold).all() or (np.abs(img_[i,j+1] - img_[i,j]) > threshold).all():
+                img[i,j] = [1, 1, 1]
             else:
                 img[i,j] = [0, 0, 0]
     return img
@@ -354,12 +354,12 @@ image = black_and_white(image)
 # image1 = zero_threshold(image1, .03)
 
 image1 = edge_detection_2(image)
-image1 = extrem_threshold(image1, .001)
-# image1 = get_sign_color(image1)
+# image1 = extrem_threshold(image1, 50)
+image1 = get_sign_color(image1)
 
-image1 = get_difference(image1, 0)
+# image1 = get_difference(image1, .01)
 
-# print(np.max(image1), np.where((image1 == np.max(image1))))
+print(np.max(image1), np.where((image1 == np.max(image1))))
 
 # image1 = threshold(image1, .01)
 plt.imshow(image1)

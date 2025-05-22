@@ -355,11 +355,11 @@ image = black_and_white(image)
 
 image1 = edge_detection_2(image)
 image1 = extrem_threshold(image1, .001)
-# image1 = get_sign_color(image1)
+image1 = get_sign_color(image1)
 
-image1 = get_difference(image1, 0)
+# image1 = get_difference(image1, 0)
 
-# print(np.max(image1), np.where((image1 == np.max(image1))))
+print(np.max(image1), np.where((image1 == np.max(image1))))
 
 # image1 = threshold(image1, .01)
 plt.imshow(image1)
