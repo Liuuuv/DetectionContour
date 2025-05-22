@@ -7,8 +7,8 @@ from scipy.signal import fftconvolve, convolve2d
 
 # image = plt.imread("justdisappear.png").astype(np.float32)  # taille (573, 640, 3)
 # image = plt.imread("shinsei.png")
-image = plt.imread("upiko.png")
-# image = plt.imread("black_and_white.png")
+# image = plt.imread("upiko.png")
+image = plt.imread("black_and_white.png")
 
 
 image = image[::1, ::1, :]  # 5:taille (115, 128, 3), 4:taille (144, 160, 3)
@@ -293,7 +293,7 @@ gaussian_filter_3x3 = Filter(
 
 plot_count = 1
 multiplot = True
-# multiplot = False
+multiplot = False
 
 if multiplot:
     columns = 2
@@ -316,9 +316,9 @@ image = black_and_white(image)
 
 
 ## noise
-noise = np.random.normal(0, .05, image.shape)[:,:,:1]
-image += noise
-image = np.clip(image, 0, 1).astype(image.dtype)
+# noise = np.random.normal(0, .1, image.shape)[:,:,:1]
+# image += noise
+# image = np.clip(image, 0, 1).astype(image.dtype)
 
 # plt.imshow(image)
 
@@ -347,8 +347,8 @@ image = np.clip(image, 0, 1).astype(image.dtype)
 # image = convolution(image, gaussian_filter_3x3)
 # plot(image3)
 
-# image1 = det_hess(image)
-# image1 = image1/np.max(image1)
+image1 = det_hess(image)
+image1 = image1/np.max(image1)
 
 # image1 = convolution(image, laplacian_filter)
 # image1 = zero_threshold(image1, .03)
@@ -358,20 +358,18 @@ image = np.clip(image, 0, 1).astype(image.dtype)
 # image1 = get_sign_color(image1)
 # image1 = get_difference(image1, .01)
 # print(np.max(image1), np.where((image1 == np.max(image1))))
-# image1 = threshold(image1, .01)
-# plt.imshow(image1)
+image1 = threshold(image1, .05)
+plt.imshow(image1)
 
 # plot(image1)
 
 
-plot(image)
 
 
-# image = convolution(image, gaussian_filter_3x3)
-image2 = edge_detection_1(image)
-image2 = threshold(image2, .3)
+# image2 = edge_detection_1(image_g)
+# image2 = threshold(image2, .03)
 # plt.imshow(image2)
-plot(image2)
+# plot(image2)
 
 # image3 = combine_threshold(image1, image2)
 # plot(image3)

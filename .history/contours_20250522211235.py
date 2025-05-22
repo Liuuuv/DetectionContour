@@ -91,25 +91,25 @@ def convolution(img_: np.ndarray, filter: Filter):  # 0 outside
 #     return img
 
 
-def convolution(img_: np.ndarray, filter: 'Filter') -> np.ndarray:
-    # Vérification des dimensions
-    if img_.ndim == 3:
-        if not np.allclose(img_[:,:,0], img_[:,:,1]) or not np.allclose(img_[:,:,0], img_[:,:,2]):
-            raise ValueError("L'image doit être en noir et blanc (canaux identiques)")
-        img_2d = img_[:,:,0]  # Utilise un seul canal
-    else:
-        img_2d = img_
+# def convolution(img_: np.ndarray, filter: 'Filter') -> np.ndarray:
+#     # Vérification des dimensions
+#     if img_.ndim == 3:
+#         if not np.allclose(img_[:,:,0], img_[:,:,1]) or not np.allclose(img_[:,:,0], img_[:,:,2]):
+#             raise ValueError("L'image doit être en noir et blanc (canaux identiques)")
+#         img_2d = img_[:,:,0]  # Utilise un seul canal
+#     else:
+#         img_2d = img_
 
-    # Conversion en float pour la précision
-    img_2d = img_2d.astype(np.float32)
+#     # Conversion en float pour la précision
+#     img_2d = img_2d.astype(np.float32)
     
-    # Application de la convolution 2D
-    convolved = convolve2d(img_2d, filter.array, mode='same', boundary='fill', fillvalue=0)
+#     # Application de la convolution 2D
+#     convolved = convolve2d(img_2d, filter.array, mode='same', boundary='fill', fillvalue=0)
     
-    # Reconstruction des canaux si nécessaire
-    if img_.ndim == 3:
-        return np.stack((convolved,)*3, axis=-1).astype(np.float32)
-    return convolved.astype(np.float32)
+#     # Reconstruction des canaux si nécessaire
+#     if img_.ndim == 3:
+#         return np.stack((convolved,)*3, axis=-1).astype(np.float32)
+#     return convolved.astype(np.float32)
 
 
 
@@ -293,7 +293,7 @@ gaussian_filter_3x3 = Filter(
 
 plot_count = 1
 multiplot = True
-# multiplot = False
+multiplot = False
 
 if multiplot:
     columns = 2
@@ -316,9 +316,9 @@ image = black_and_white(image)
 
 
 ## noise
-noise = np.random.normal(0, .05, image.shape)[:,:,:1]
-image += noise
-image = np.clip(image, 0, 1).astype(image.dtype)
+# noise = np.random.normal(0, .1, image.shape)[:,:,:1]
+# image += noise
+# image = np.clip(image, 0, 1).astype(image.dtype)
 
 # plt.imshow(image)
 
@@ -364,14 +364,12 @@ image = np.clip(image, 0, 1).astype(image.dtype)
 # plot(image1)
 
 
-plot(image)
 
-
-# image = convolution(image, gaussian_filter_3x3)
+# image = convolution(image, filtermean)
 image2 = edge_detection_1(image)
-image2 = threshold(image2, .3)
-# plt.imshow(image2)
-plot(image2)
+image2 = threshold(image2, .015)
+plt.imshow(image2)
+# plot(image2)
 
 # image3 = combine_threshold(image1, image2)
 # plot(image3)

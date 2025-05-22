@@ -293,7 +293,7 @@ gaussian_filter_3x3 = Filter(
 
 plot_count = 1
 multiplot = True
-# multiplot = False
+multiplot = False
 
 if multiplot:
     columns = 2
@@ -316,7 +316,7 @@ image = black_and_white(image)
 
 
 ## noise
-noise = np.random.normal(0, .05, image.shape)[:,:,:1]
+noise = np.random.normal(0, .1, image.shape)[:,:,:1]
 image += noise
 image = np.clip(image, 0, 1).astype(image.dtype)
 
@@ -364,14 +364,12 @@ image = np.clip(image, 0, 1).astype(image.dtype)
 # plot(image1)
 
 
-plot(image)
 
-
-# image = convolution(image, gaussian_filter_3x3)
+image = convolution(image, filtermean)
 image2 = edge_detection_1(image)
-image2 = threshold(image2, .3)
-# plt.imshow(image2)
-plot(image2)
+image2 = threshold(image2, .01)
+plt.imshow(image2)
+# plot(image2)
 
 # image3 = combine_threshold(image1, image2)
 # plot(image3)
