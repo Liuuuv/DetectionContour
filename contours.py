@@ -2,14 +2,18 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import hsv_to_rgb
 import numpy as np
 import time
-from scipy.signal import fftconvolve
+from scipy.signal import fftconvolve, convolve2d
 
-image = plt.imread("justdisappear.png")     # taille (573, 640, 3)
+
+image = plt.imread("justdisappear.png").astype(np.float32)  # taille (573, 640, 3)
 # image = plt.imread("shinsei.png")
 # image = plt.imread("upiko.png")
+# image = plt.imread("black_and_white.png")
 
 
 image = image[::1, ::1, :]  # 5:taille (115, 128, 3), 4:taille (144, 160, 3)
+image[:,:]/255
+
 
 
 
@@ -46,7 +50,7 @@ def black_and_white(img_):
     grayscale = np.dot(img_[..., :3], [0.2989, 0.5870, 0.1140])
     
     # Stack the grayscale values into 3 channels
-    return np.stack((grayscale,)*3, axis=-1).astype(img_.dtype)
+    return np.stack((grayscale,)*3, axis=-1).astype(img_.dtype).astype(np.float32)
 
 
 def convolution(img_: np.ndarray, filter: Filter):  # 0 outside
@@ -63,27 +67,49 @@ def convolution(img_: np.ndarray, filter: Filter):  # 0 outside
             
             # img[i,j] = 0
             # img[i,j] = abs(coef)
-            img[i,j] = coef
+            img[i,j] = [coef, coef, coef]
     return img
 
 
 
-def convolution(img_: np.ndarray, filter: 'Filter'):
-    if img_.ndim != 3 or img_.shape[2] != 3:
-        raise ValueError("format : HxWx3")
+# def convolution(img_: np.ndarray, filter: 'Filter'):
+#     if img_.ndim != 3 or img_.shape[2] != 3:
+#         raise ValueError("format : HxWx3")
     
-    # Extraction d'un seul canal (le vert par défaut)
-    img_gray = img_[:, :, 1].astype(np.float32)
+#     # Extraction d'un seul canal (le vert par défaut)
+#     # img_gray = img_[:, :, 1].astype(np.float32)
     
-    # Application convolution FFT
-    convolved = fftconvolve(img_gray, filter.array, mode='same')
+#     # Application convolution FFT
+#     convolved = fftconvolve(img_[:, :, 0], filter.array, mode='same')
     
-    # Valeur absolue et normalisation
-    # convolved = np.abs(convolved)
-    # convolved = np.clip(convolved, 0, 255).astype(img_.dtype)
+#     # Valeur absolue et normalisation
+#     # convolved = np.abs(convolved)
+#     # convolved = np.clip(convolved, 0, 255).astype(img_.dtype)
     
-    # Reconstruction des 3 canaux
-    return np.stack((convolved,)*3, axis=-1)
+#     # Reconstruction des 3 canaux
+#     img = np.stack((convolved,)*3, axis=-1)
+#     return img
+
+
+def convolution(img_: np.ndarray, filter: 'Filter') -> np.ndarray:
+    # Vérification des dimensions
+    if img_.ndim == 3:
+        if not np.allclose(img_[:,:,0], img_[:,:,1]) or not np.allclose(img_[:,:,0], img_[:,:,2]):
+            raise ValueError("L'image doit être en noir et blanc (canaux identiques)")
+        img_2d = img_[:,:,0]  # Utilise un seul canal
+    else:
+        img_2d = img_
+
+    # Conversion en float pour la précision
+    img_2d = img_2d.astype(np.float32)
+    
+    # Application de la convolution 2D
+    convolved = convolve2d(img_2d, filter.array, mode='same', boundary='fill', fillvalue=0)
+    
+    # Reconstruction des canaux si nécessaire
+    if img_.ndim == 3:
+        return np.stack((convolved,)*3, axis=-1).astype(np.float32)
+    return convolved.astype(np.float32)
 
 
 
@@ -105,13 +131,24 @@ def get_magnitude(img_x, img_y, show_angle = False):
         
         rgb = hsv_to_rgb(hsv)
         img = rgb
-        # img = (rgb * 255).astype(np.uint8)
-        
+        # img = (rgb).astype(np.uint8)
         return img * np.sqrt(img_x**2 + img_y**2)
 
 def threshold(img, threshold):
-    binary = np.where(img[:,:,0] > threshold, 255, 0)
-    return np.stack((binary,)*3, axis=-1).astype(np.uint8)
+    binary = np.where(img[:,:,0] > threshold, 1, 0)
+    return np.stack((binary,)*3, axis=-1).astype(np.float32)
+
+def zero_threshold(img, threshold):
+    binary = np.where(np.abs(img[:,:,0]) < threshold, 1, 0)
+    return np.stack((binary,)*3, axis=-1).astype(np.float32)
+
+def combine_threshold(img1, img2):
+    binary = np.where((img1[:,:,0] == img2[:,:,0]) & (img1[:,:,0] == 1), 1, 0)
+    return np.stack((binary,)*3, axis=-1).astype(np.float32)
+
+def extrem_threshold(img, threshold):
+    return np.where(img > threshold, [1,1,1], np.where(img < -threshold, [-255,-255,-255], 0))
+    
 
 def edge_detection_1(img, plot_differential = False,show_angle = False):
     image_x = convolution(img, filterx)
@@ -127,6 +164,19 @@ def edge_detection_1(img, plot_differential = False,show_angle = False):
     
     return img_
 
+def edge_detection_2(img):
+    image_x = convolution(img, filterx)
+    image_y = convolution(img, filtery)
+    image_xy = convolution(img, filterxy)
+    image_xx = convolution(img, filterxx)
+    image_yy = convolution(img, filteryy)
+    magnitude = get_magnitude(image_x, image_y) + np.ones(img.shape) * 1e-8
+    
+    img_ = (2*(image_x ** 2 * image_xx + 4 * image_x * image_y * image_xy + image_y ** 2 * image_yy)/magnitude)
+    # img_ = np.stack((img_,)*3, axis=-1).astype(np.uint8)
+    return  img_
+    
+
 def get_sign_color(img_):
     # (h, w, 3)
     mask = img_[:,:,:] >= 0
@@ -138,6 +188,15 @@ def get_sign_color(img_):
     ) * np.abs(img_[:,:,0, np.newaxis])
     return img
 
+def get_difference(img_, threshold):
+    img = img_.copy()
+    for i in range(len(img_)-1):
+        for j in range(len(img_[i])-1):
+            if (np.abs(img_[i+1,j] - img_[i,j]) > threshold).all() or (np.abs(img_[i+1,j+1] - img_[i,j]) > threshold).all() or (np.abs(img_[i,j+1] - img_[i,j]) > threshold).all():
+                img[i,j] = [1, 1, 1]
+            else:
+                img[i,j] = [0, 0, 0]
+    return img
 
 def plot(img):
     global plot_count
@@ -169,14 +228,41 @@ filtery = Filter(
         ])
 )
 
-# filter = Filter(
-#     np.array([1,1]), 
-#     np.array([
-#         [0,1,0],
-#         [1,-4,1],
-#         [0,1,0]
-#         ])
-# )
+## d2fdxdy
+filterxy = Filter(
+    np.array([0,1]), 
+    np.array([
+        [-1,1],
+        [1,-1]
+        ])
+)
+
+## d2fdxdy
+filterxx = Filter(
+    np.array([0,1]), 
+    np.array([
+        [1,-2,1]
+        ])
+)
+
+## d2fdxdy
+filteryy = Filter(
+    np.array([1,0]), 
+    np.array([
+        [1],
+        [-2],
+        [1]
+        ])
+)
+
+laplacian_filter = Filter(
+    np.array([1,1]), 
+    np.array([
+        [1,1,1],
+        [1,-8,1],
+        [1,1,1]
+        ])
+)
 
 
 filtermean = Filter(
@@ -200,7 +286,7 @@ gaussian_filter_3x3 = Filter(
 
 plot_count = 1
 multiplot = True
-multiplot = False
+# multiplot = False
 
 if multiplot:
     columns = 2
@@ -212,8 +298,9 @@ if multiplot:
 ## black and white image
 # start_time = time.time()
 image = black_and_white(image)
+# plot(image)
 
-
+image_g = convolution(image, gaussian_filter_3x3)
 
 
 # image1 = edge_detection_1(image)
@@ -222,12 +309,12 @@ image = black_and_white(image)
 
 
 ## noise
-noise = np.random.normal(0, .1, image.shape)[:,:,:1]
-image += noise
-image = np.clip(image, 0, 255).astype(image.dtype)
+# noise = np.random.normal(0, .1, image.shape)[:,:,:1]
+# image += noise
+# image = np.clip(image, 0, 1).astype(image.dtype)
 
 # plt.imshow(image)
-plot(image)
+
 
 
 
@@ -238,10 +325,10 @@ plot(image)
 
 
 
-image0 = convolution(image, filtermean)
+# image0 = convolution(image, filtermean)
 
 # plt.imshow(image0)
-plot(image0)
+# plot(image0)
 
 
 
@@ -250,18 +337,39 @@ plot(image0)
 # print(end_time - start_time)
 
 
-# image3 = convolution(image, gaussian_filter_3x3)
+# image = convolution(image, gaussian_filter_3x3)
 # plot(image3)
 
+image1 = edge_detection_2(image_g)
+# image1 = convolution(image, laplacian_filter)
+# image1 = zero_threshold(image1, .03)
 
-image2 = edge_detection_1(image0)
-image2 = threshold(image2, .1)
 
-plt.imshow(image2)
+# image1 = extrem_threshold(image1, 50)
+# image1 = get_sign_color(image1)
+image1 = get_difference(image1, .01)
+# plt.imshow(image1)
+
+plot(image1)
+
+
+
+
+image2 = edge_detection_1(image_g)
+image2 = threshold(image2, .03)
+# plt.imshow(image2)
 plot(image2)
 
-# image4 = edge_detection_1(image3)
+image3 = combine_threshold(image1, image2)
+plot(image3)
+
+
+# plt.imshow(image1)
+# plot(image2)
+
+# image4 = edge_detection_1(image)
 # image4 = threshold(image4, .1)
+# plt.imshow(image4)
 # plot(image4)
 
 if multiplot:
