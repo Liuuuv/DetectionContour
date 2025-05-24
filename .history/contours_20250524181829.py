@@ -299,21 +299,8 @@ def get_wt(img,level):
         
     return coefs
 
-def edge_detection_wt_like(img, level):
-    assert level > 0
-    x_imgs = []
-    y_imgs = []
-    mean_img = img.copy()
-    for _ in range(level):
-        x_img = convolution(mean_img, filterx).copy()
-        y_img = convolution(mean_img, filterx).copy()
-        
-        x_imgs.append(x_img)
-        y_imgs.append(y_img)
-        
-        mean_img = convolution(mean_img, filtermean)
-    
-    return x_imgs, y_imgs
+def edge_detection_wt(img):
+    coefs = get_wt()
     
 
 ## df/dx
@@ -415,7 +402,7 @@ multiplot = True
 # multiplot = False
 
 if multiplot:
-    columns = 5
+    columns = 2
     rows = 2
     fig = plt.figure(figsize=(rows, columns))
 
@@ -435,9 +422,9 @@ image = black_and_white(image)
 
 # plot(image)
 ## noise
-# noise = np.random.normal(0, .1, image.shape)[:,:,:1]
-# image += noise
-# image = np.clip(image, 0, 1).astype(image.dtype)
+noise = np.random.normal(0, .1, image.shape)[:,:,:1]
+image += noise
+image = np.clip(image, 0, 1).astype(image.dtype)
 
 # plt.imshow(image) plot(image)
 
@@ -576,35 +563,15 @@ image = black_and_white(image)
 
 
 ## wavelet
-# plot_wt(image,-1)
-
-x_imgs, y_imgs = edge_detection_wt_like(image, 5)
-
-edge_image = np.zeros(image.shape)
-
-for i_x, x_img in enumerate(x_imgs):
-    # x_img /= np.max(x_img)
-    # plot(x_img)
-    # plt.title("x" + str(i_x))
-    
-    
-    
-    
-for i_y, y_img in enumerate(y_imgs):
-    # y_img /= np.max(y_img)
-    # plot(y_img)
-    # plt.title("y" + str(i_y))
-    
-    
-    
+plot_wt(image,-1)
 
 
 
-# if multiplot:
-#     plt.subplots_adjust(
-#         left=0, right=1, bottom=0, top=1,
-#         wspace=0, hspace=0
-#     )
+if multiplot:
+    plt.subplots_adjust(
+        left=0, right=1, bottom=0, top=1,
+        wspace=0, hspace=0
+    )
 
 
 

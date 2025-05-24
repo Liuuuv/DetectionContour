@@ -3,13 +3,11 @@ from matplotlib.colors import hsv_to_rgb
 import numpy as np
 import time
 from scipy.signal import fftconvolve, convolve2d
-import pywt
-import pywt.data
 
 
-image = plt.imread("justdisappear.png").astype(np.float32)  # taille (573, 640, 3)
+# image = plt.imread("justdisappear.png").astype(np.float32)  # taille (573, 640, 3)
 # image = plt.imread("shinsei.png").astype(np.float32)
-# image = plt.imread("upiko.png").astype(np.float32)
+image = plt.imread("upiko.png").astype(np.float32)
 # image = plt.imread("black_and_white.png").astype(np.float32)
 
 
@@ -174,7 +172,7 @@ def edge_detection_2(img):
     image_yy = convolution(img, filteryy)
     magnitude = get_magnitude(image_x, image_y) + np.ones(img.shape) * 1e-8
     
-    img_ = (image_x ** 2 * image_xx + 2 * image_x * image_y * image_xy + image_y ** 2 * image_yy)/magnitude**2
+    img_ = image_x ** 2 * image_xx + 2 * image_x * image_y * image_xy + image_y ** 2 * image_yy
     # img_ = np.stack((img_,)*3, axis=-1).astype(np.uint8)
     return  img_
 
@@ -212,38 +210,6 @@ def ease_in_out(x, alpha):
     xalpha = x ** alpha
     return xalpha / (xalpha + (1 - x) ** alpha)
 
-def transformee_fourier(img):
-    (M, N) = img[:,:,0].shape
-    fourier = np.zeros((M, N), dtype=np.complex128)
-    
-    # Création des matrices de fréquences u et v
-    u = np.arange(M)
-    v = np.arange(N)
-    
-    for x in range(M):
-        for y in range(N):
-            # Terme exponentiel en x (dépend de u)
-            exp_x = np.exp(-2j * np.pi * u * x / M)
-            # Terme exponentiel en y (dépend de v)
-            exp_y = np.exp(-2j * np.pi * v * y / N)
-            # Produit extérieur pour obtenir la combinaison (u, v)
-            exp_term = np.outer(exp_x, exp_y)
-            fourier += image[:,:,0][x, y] * exp_term
-            
-    return fourier
-
-
-def transformee_fourier(img):
-    fourier_transform = np.fft.fft2(img[:,:,0])
-
-    # 3. Décaler les fréquences et calculer la magnitude
-    fourier_shifted = np.fft.fftshift(fourier_transform)
-    
-    # magnitude_spectrum = np.log(1 + np.abs(fourier_shifted))  # Log pour meilleure visualisation
-    # print(magnitude_spectrum)
-    
-    return fourier_shifted
-
 def plot(img):
     global plot_count
     if not multiplot:
@@ -255,65 +221,6 @@ def plot(img):
     plot_count += 1
     plt.imshow(img)
     plt.yticks([])
-
-def do_operation(img):
-    img = np.stack((img,)*3, axis=-1).astype(np.float32)
-    # cH = convolution(cH, gaussian_filter_3x3)
-    img = threshold(img, 0.03)
-    img = img[:,:,0]
-    return img
-
-def plot_wt(img, level = 1):
-    # columns = 2
-    # rows = 2
-    # fig = plt.figure(figsize=(rows, columns))
-    coefs = get_wt(img, level)
-    
-    # cA, (cH, cV, cD) = coefs
-    
-    arr, coef_slices = pywt.coeffs_to_array(coefs, axes=(-2,-1))
-    arr = np.abs(arr)
-    
-    # max = np.max([np.max(arr[arr.shape[0]//2:,:]), np.max(arr[:,arr.shape[1]//2:])])
-    # arr[arr.shape[0]//2:,:arr.shape[1]//2] /= max
-    # arr[:arr.shape[0]//2,arr.shape[1]//2:] /= max
-    # arr[arr.shape[0]//2:,arr.shape[1]//2:] /= max
-    
-    
-    arr = np.stack((arr,)*3, axis=-1).astype(np.float32)
-    # arr = get_sign_color(arr)
-    plt.imshow(arr)
-    # plt.imshow(arr, cmap=plt.cm.gray)
-
-    # image1 = pywt.idwt2((cA, (cH, cV, cD)), 'db3', mode='periodization')
-    # image1 = np.stack((image1,)*3, axis=-1).astype(np.float32)
-
-    # plt.imshow(image1)
-    # plot(image1)
-
-def get_wt(img,level):
-    if level != -1:
-        coefs = pywt.wavedec2(img[:,:,0], 'db3', mode='periodization', level=level)
-    else:
-        coefs = pywt.wavedec2(img[:,:,0], 'db3', mode='periodization')
-        
-    return coefs
-
-def edge_detection_wt_like(img, level):
-    assert level > 0
-    x_imgs = []
-    y_imgs = []
-    mean_img = img.copy()
-    for _ in range(level):
-        x_img = convolution(mean_img, filterx).copy()
-        y_img = convolution(mean_img, filterx).copy()
-        
-        x_imgs.append(x_img)
-        y_imgs.append(y_img)
-        
-        mean_img = convolution(mean_img, filtermean)
-    
-    return x_imgs, y_imgs
     
 
 ## df/dx
@@ -412,10 +319,10 @@ custom_filter2 = Filter(
 
 plot_count = 1
 multiplot = True
-# multiplot = False
+multiplot = False
 
 if multiplot:
-    columns = 5
+    columns = 2
     rows = 2
     fig = plt.figure(figsize=(rows, columns))
 
@@ -435,11 +342,12 @@ image = black_and_white(image)
 
 # plot(image)
 ## noise
-# noise = np.random.normal(0, .1, image.shape)[:,:,:1]
+# noise = np.random.normal(0, .01, image.shape)[:,:,:1]
 # image += noise
 # image = np.clip(image, 0, 1).astype(image.dtype)
 
-# plt.imshow(image) plot(image)
+plt.imshow(image)
+# plot(image)
 
 
 
@@ -475,32 +383,28 @@ image = black_and_white(image)
 # plt.imshow(image1)
 
 
-# image2 = np.abs(convolution(image, custom_filter1))
+image2 = np.abs(convolution(image, custom_filter1))
 # image2 = threshold(image2, .1)
-# print(np.max(image2))
-# image2 /= np.max(image2)
+print(np.max(image2))
+image2 /= np.max(image2)
 # image2 = threshold(image2, .25)
 # plt.imshow(image2)
 # plot(image2)
 
 
-# image3 = edge_detection_1(image)
-# image3 = convolution(image, filterxy)
-# image3 = get_sign_color(image3)
+
+image3 = np.abs(convolution(image, filterx))
 # image3 = threshold(image3, .3)
-# image3 /= np.max(image3)
-# plt.imshow(image3)
+image3 /= np.max(image3)
 # plot(image3)
 
 
 
-# image4 = np.abs(convolution(image, custom_filter2))
-# image4 = threshold(image4, .07)
+image4 = np.abs(convolution(image, custom_filter2))
+# image4 = threshold(image4, .5)
 # print(np.max(image4), np.where(image4 == np.max(image4)))
 # image4 /= np.max(image4)
-# image4 *= 2
-# plt.imshow(image4[:,:,0], cmap='magma')
-# plt.imshow(image4)
+plt.imshow(image4)
 # plot(image4)
 
 
@@ -511,11 +415,10 @@ image = black_and_white(image)
 # plot(image)
 # plt.imshow(image)
 
-# image1 = edge_detection_2(image)
-# image1 = extrem_threshold(image1, .008)
-# image1 /= np.max(image1)
+image1 = edge_detection_1(image)
+# image1 = extrem_threshold(image1, .00008)
 # image1 = get_sign_color(image1)
-# image1 /= np.max(image1)
+image1 /= np.max(image1)
 
 # image1 = get_difference(image1)
 
@@ -530,14 +433,12 @@ image = black_and_white(image)
 # plot(image)
 # plot(image)
 
-# image = convolution(image, gaussian_filter_3x3)
-
 # image2 = det_hess(image)
 # image2 = threshold(image2, .0005)
 # image2 = image2/np.max(image2)
 # image2 *= 10
 
-# print(np.max(image2), np.where((image2 == np.max(image2))))
+# print(np.max(image1), np.where((image1 == np.max(image1))))
 
 # image = convolution(image, gaussian_filter_3x3)
 # image2 = edge_detection_2(image)
@@ -562,49 +463,11 @@ image = black_and_white(image)
 # plt.imshow(image4)
 # plot(image4)
 
-
-# fourier = transformee_fourier(image)
-
-
-# fourier = np.log(1 + np.abs(fourier))
-# fourier /= np.max(fourier)
-# # print(fourier)
-# plt.imshow(fourier, cmap='magma')
-# plt.colorbar()
-
-
-
-
-## wavelet
-# plot_wt(image,-1)
-
-x_imgs, y_imgs = edge_detection_wt_like(image, 5)
-
-edge_image = np.zeros(image.shape)
-
-for i_x, x_img in enumerate(x_imgs):
-    # x_img /= np.max(x_img)
-    # plot(x_img)
-    # plt.title("x" + str(i_x))
-    
-    
-    
-    
-for i_y, y_img in enumerate(y_imgs):
-    # y_img /= np.max(y_img)
-    # plot(y_img)
-    # plt.title("y" + str(i_y))
-    
-    
-    
-
-
-
-# if multiplot:
-#     plt.subplots_adjust(
-#         left=0, right=1, bottom=0, top=1,
-#         wspace=0, hspace=0
-#     )
+if multiplot:
+    plt.subplots_adjust(
+        left=0, right=1, bottom=0, top=1,
+        wspace=0, hspace=0
+    )
 
 
 
@@ -613,20 +476,13 @@ for i_y, y_img in enumerate(y_imgs):
 
 
 ## plot of color gradient
-# gradient = np.linspace(0, 2*np.pi, 360)
-# h_grad = gradient / (2*np.pi)
-# rgb_grad = hsv_to_rgb(np.stack((h_grad, np.ones(360), np.ones(360)), -1))
+gradient = np.linspace(0, 2*np.pi, 360)
+h_grad = gradient / (2*np.pi)
+rgb_grad = hsv_to_rgb(np.stack((h_grad, np.ones(360), np.ones(360)), -1))
 
-# height_factor = 60
-# rgb_grad = np.repeat(rgb_grad[np.newaxis, :, :], height_factor, axis=0)
-# # plot(rgb_grad)
-# # plt.imshow(rgb_grad)
+height_factor = 60
+rgb_grad = np.repeat(rgb_grad[np.newaxis, :, :], height_factor, axis=0)
+# plot(rgb_grad)
+# plt.imshow(rgb_grad)
 
-
-
-
-
-
-
-# plt.colorbar()
 plt.show()

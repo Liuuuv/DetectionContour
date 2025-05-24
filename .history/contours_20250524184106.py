@@ -579,24 +579,14 @@ image = black_and_white(image)
 # plot_wt(image,-1)
 
 x_imgs, y_imgs = edge_detection_wt_like(image, 5)
-
-edge_image = np.zeros(image.shape)
-
 for i_x, x_img in enumerate(x_imgs):
     # x_img /= np.max(x_img)
-    # plot(x_img)
-    # plt.title("x" + str(i_x))
-    
-    
-    
-    
+    plot(x_img)
+    plt.title("x" + str(i_x))
 for i_y, y_img in enumerate(y_imgs):
     # y_img /= np.max(y_img)
-    # plot(y_img)
-    # plt.title("y" + str(i_y))
-    
-    
-    
+    plot(y_img)
+    plt.title("y" + str(i_y))
 
 
 
