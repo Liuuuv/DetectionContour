@@ -628,9 +628,9 @@ for cH, cV, cD in details:
     cD_conv = convolution(cD, filterx)
     new_details.append((cH_conv, cV_conv, cD_conv))
     
-coefs_reconstructed = [cA] + new_details
+coefs = (cA, details)
 
-image1 = pywt.waverec2(coefs_reconstructed, 'db3', mode='periodization')
+image1 = pywt.waverec2(coefs, 'db3', mode='periodization')
 image1 = np.stack((image1,)*3, axis=-1).astype(np.float32)
 
 # plt.imshow(image1)

@@ -412,10 +412,10 @@ custom_filter2 = Filter(
 
 plot_count = 1
 multiplot = True
-# multiplot = False
+multiplot = False
 
 if multiplot:
-    columns = 2
+    columns = 5
     rows = 2
     fig = plt.figure(figsize=(rows, columns))
 
@@ -615,36 +615,30 @@ level = 1
 
 # plt.imshow(edge_image)
 
-plot(image)
-coefs = get_wt(image,5)
+
+coefs = get_wt(image,1)
 cA = coefs[0]
 details = coefs[1:]
 
-new_details = []
 
-for cH, cV, cD in details:
-    cH_conv = convolution(cH, filterx)
-    cV_conv = convolution(cV, filterx)
-    cD_conv = convolution(cD, filterx)
-    new_details.append((cH_conv, cV_conv, cD_conv))
-    
-coefs_reconstructed = [cA] + new_details
+for detail
 
-image1 = pywt.waverec2(coefs_reconstructed, 'db3', mode='periodization')
+
+image1 = pywt.waverec2(coefs, 'db3', mode='periodization')
 image1 = np.stack((image1,)*3, axis=-1).astype(np.float32)
 
-# plt.imshow(image1)
-plot(image1)
+
+plt.imshow(image1)
 
 
 
 
 
-if multiplot:
-    plt.subplots_adjust(
-        left=0, right=1, bottom=0, top=1,
-        wspace=0, hspace=0
-    )
+# if multiplot:
+#     plt.subplots_adjust(
+#         left=0, right=1, bottom=0, top=1,
+#         wspace=0, hspace=0
+#     )
 
 
 
