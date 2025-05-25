@@ -7,10 +7,10 @@ import pywt
 import pywt.data
 
 
-image = plt.imread("justdisappear.png").astype(np.float32)  # taille (573, 640, 3)
+# image = plt.imread("justdisappear.png").astype(np.float32)  # taille (573, 640, 3)
 # image = plt.imread("shinsei.png").astype(np.float32)
 # image = plt.imread("upiko.png").astype(np.float32)
-# image = plt.imread("black_and_white.png").astype(np.float32)
+image = plt.imread("black_and_white.png").astype(np.float32)
 
 
 image = image[::1, ::1, :]  # 5:taille (115, 128, 3), 4:taille (144, 160, 3)
@@ -137,8 +137,13 @@ def get_magnitude(img_x, img_y, show_angle = False):
         return img * np.sqrt(img_x**2 + img_y**2)
 
 def threshold(img, threshold):
-    binary = np.where(img[:,:,0] > threshold, 1, 0)
-    return np.stack((binary,)*3, axis=-1).astype(np.float32)
+    if img.ndim == 3:
+        binary = np.where(img[:,:,0] > threshold, 1, 0)
+        return np.stack((binary,)*3, axis=-1).astype(np.float32)
+    else:
+        binary = np.where(img > threshold, 1, 0)
+        return binary
+    
 
 def zero_threshold(img, threshold):
     binary = np.where(np.abs(img[:,:,0]) < threshold, 1, 0)
@@ -150,6 +155,11 @@ def combine_threshold(img1, img2):
 
 def extrem_threshold(img, threshold):
     return np.where(img > threshold, [1,1,1], np.where(img < -threshold, [-1,-1,-1], 0)).astype(np.float32)
+
+def threshold_to_zero(img, threshold):
+    img_ = img.copy()
+    img_[img_ < threshold] = 0
+    return img_
     
 
 def edge_detection_1(img, plot_differential = False,show_angle = False):
@@ -244,7 +254,7 @@ def transformee_fourier(img):
     
     return fourier_shifted
 
-def plot(img):
+def plot(img, *args, **kwargs):
     global plot_count
     if not multiplot:
         return
@@ -253,8 +263,8 @@ def plot(img):
         return
     fig.add_subplot(rows, columns, plot_count)
     plot_count += 1
-    plt.imshow(img)
-    plt.yticks([])
+    plt.imshow(img, *args, **kwargs)
+    # plt.yticks([])
 
 def do_operation(img):
     img = np.stack((img,)*3, axis=-1).astype(np.float32)
@@ -293,9 +303,9 @@ def plot_wt(img, level = 1):
 
 def get_wt(img,level):
     if level != -1:
-        coefs = pywt.wavedec2(img[:,:,0], 'db3', mode='periodization', level=level)
+        coefs = pywt.wavedec2(img[:,:,0], 'sym4', mode='periodization', level=level)
     else:
-        coefs = pywt.wavedec2(img[:,:,0], 'db3', mode='periodization')
+        coefs = pywt.wavedec2(img[:,:,0], 'sym4', mode='periodization')
         
     return coefs
 
@@ -405,6 +415,14 @@ custom_filter2 = Filter(
         [1,0,0],
         [1,-3,0],
         [1,0,0]
+        ])
+)
+
+mean_filter_2x2 = Filter(
+    np.array([0,0]), 
+    (1/4)*np.array([
+        [1,1],
+        [1,1]
         ])
 )
 
@@ -580,7 +598,7 @@ image = black_and_white(image)
 
 
 
-level = 1
+# level = 1
 # x_imgs, y_imgs = edge_detection_wt_like(image, level)
 
 # edge_image = np.zeros(image.shape)
@@ -615,34 +633,74 @@ level = 1
 
 # plt.imshow(edge_image)
 
-plot(image)
-coefs = get_wt(image,5)
-cA = coefs[0]
-details = coefs[1:]
 
-new_details = []
 
-for cH, cV, cD in details:
-    cH_conv = convolution(cH, filterx)
-    cV_conv = convolution(cV, filterx)
-    cD_conv = convolution(cD, filterx)
-    new_details.append((cH_conv, cV_conv, cD_conv))
+
+
+# plot(image)
+# coefs = get_wt(image,5)
+
+# ## denoise
+# # sigma = np.median(np.abs(coefs[-1][0])) / 0.6745
+# # N = np.max([image.shape[0], image.shape[1]])
+# # T = 0.1 * sigma * np.sqrt(2 * np.log(N))
+# # print('T', T)
+
+
+# cA = coefs[0]
+# details = coefs[1:]
+
+# new_details = []
+
+# for i, (cH, cV, cD) in enumerate(details):
+#     if i == 0:
+#         # cH = convolution(cH, mean_filter_2x2)
+#         # cV = convolution(cV, mean_filter_2x2)
+#         # cD = convolution(cD, mean_filter_2x2)
+#         threshold_ = T
+#         cH = threshold_to_zero(cH, threshold_)
+#         cV = threshold_to_zero(cV, threshold_)
+#         cD = threshold_to_zero(cD, threshold_)
+#     new_details.append((cH, cV, cD))
     
-coefs_reconstructed = [cA] + new_details
+# coefs_reconstructed = [cA] + new_details
 
-image1 = pywt.waverec2(coefs_reconstructed, 'db3', mode='periodization')
-image1 = np.stack((image1,)*3, axis=-1).astype(np.float32)
+
+# coefs_reconstructed = [coefs[0]] + [
+#     (pywt.threshold(cH, T, mode='soft'),
+#      pywt.threshold(cV, T, mode='soft'),
+#      pywt.threshold(cD, T, mode='soft'))
+#     for cH, cV, cD in coefs[1:]
+# ]
+
+# image1 = pywt.waverec2(coefs_reconstructed, 'sym4', mode='periodization')
+# image1 = np.stack((image1,)*3, axis=-1).astype(np.float32)
 
 # plt.imshow(image1)
-plot(image1)
+# plot(image1)
 
 
+studied_row = 200
+max_scale = 400
+# times = np.linspace(0,image.shape[1], 1000)
+# sampling_period = np.diff(times).mean()
+widths = np.geomspace(1, max_scale, num=100)
+cwtmatr, freqs = pywt.cwt(image[studied_row,:,0], widths, 'morl')
+
+# # Surface = somme des valeurs absolues
+# surface = np.sum(np.abs(cwtmatr))
+
+# Affichage
+plot(image[studied_row-5:studied_row+6,:])
+plot(image[studied_row-25:studied_row+26,:])
+plot(np.abs(cwtmatr), extent=[0, image.shape[1], 1, max_scale+1], cmap='jet')
+plt.colorbar()
 
 
 
 if multiplot:
     plt.subplots_adjust(
-        left=0, right=1, bottom=0, top=1,
+        left=0.05, right=0.95, bottom=0, top=1,
         wspace=0, hspace=0
     )
 

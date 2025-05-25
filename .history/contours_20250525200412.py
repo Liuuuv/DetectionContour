@@ -1,0 +1,722 @@
+import matplotlib.pyplot as plt
+from matplotlib.colors import hsv_to_rgb
+import numpy as np
+import time
+from scipy.signal import fftconvolve, convolve2d
+import pywt
+import pywt.data
+
+
+image = plt.imread("justdisappear.png").astype(np.float32)  # taille (573, 640, 3)
+# image = plt.imread("shinsei.png").astype(np.float32)
+# image = plt.imread("upiko.png").astype(np.float32)
+# image = plt.imread("black_and_white.png").astype(np.float32)
+
+
+image = image[::1, ::1, :]  # 5:taille (115, 128, 3), 4:taille (144, 160, 3)
+image[:,:]/255
+
+
+
+
+class Filter:
+    def __init__(self, center: np.ndarray, array: np.ndarray):
+        self.center = center    # np.array([i,j])
+        self.array = array
+        self.shape = np.array((len(array), len(array[0])))
+        
+        # print("shape ",self.shape)
+        
+        self.right_range = self.shape - self.center
+        
+        self.left_range = self.shape - self.right_range
+        # self.right_range -= np.array([1,1])
+        
+        
+        
+        # print("ranges ", self.left_range, self.right_range)
+        # print(-self.left_range[0], self.right_range[0]-1)
+        # print(-self.left_range[1], self.right_range[1]-1)
+
+
+# def black_and_white(img_):
+#     img = img_.copy()
+#     for i in range(len(img_)):
+#         for j in range(len(img_[i])):
+#             mean = np.mean(img_[i,j])
+#             img[i,j] = [mean, mean, mean]
+#     return img
+
+def black_and_white(img_):
+    # Convert to grayscale using luminance formula (better than simple mean)
+    grayscale = np.dot(img_[..., :3], [0.2989, 0.5870, 0.1140])
+    
+    # Stack the grayscale values into 3 channels
+    return np.stack((grayscale,)*3, axis=-1).astype(img_.dtype).astype(np.float32)
+
+
+def convolution(img_: np.ndarray, filter: Filter):  # 0 outside
+    img = img_.copy()
+    for i in range(len(img)):
+        for j in range(len(img[i])):
+            coef = 0
+            for k in range(-filter.left_range[0], filter.right_range[0]):
+                for l in range(-filter.left_range[1], filter.right_range[1]):
+                    if not 0 <= i-k < img.shape[0] or not 0 <= j-l < img.shape[1]:
+                        continue
+
+                    coef += img_[i-k,j-l][0]*filter.array[filter.center[0]+k,filter.center[1]+l]
+            
+            # img[i,j] = 0
+            # img[i,j] = abs(coef)
+            img[i,j] = [coef, coef, coef]
+    return img
+
+
+
+# def convolution(img_: np.ndarray, filter: 'Filter'):
+#     if img_.ndim != 3 or img_.shape[2] != 3:
+#         raise ValueError("format : HxWx3")
+    
+#     # Extraction d'un seul canal (le vert par défaut)
+#     # img_gray = img_[:, :, 1].astype(np.float32)
+    
+#     # Application convolution FFT
+#     convolved = fftconvolve(img_[:, :, 0], filter.array, mode='same')
+    
+#     # Valeur absolue et normalisation
+#     # convolved = np.abs(convolved)
+#     # convolved = np.clip(convolved, 0, 255).astype(img_.dtype)
+    
+#     # Reconstruction des 3 canaux
+#     img = np.stack((convolved,)*3, axis=-1)
+#     return img
+
+
+def convolution(img_: np.ndarray, filter: 'Filter') -> np.ndarray:
+    # Vérification des dimensions
+    if img_.ndim == 3:
+        if not np.allclose(img_[:,:,0], img_[:,:,1]) or not np.allclose(img_[:,:,0], img_[:,:,2]):
+            raise ValueError("L'image doit être en noir et blanc (canaux identiques)")
+        img_2d = img_[:,:,0]  # Utilise un seul canal
+    else:
+        img_2d = img_
+
+    # Conversion en float pour la précision
+    img_2d = img_2d.astype(np.float32)
+    
+    # Application de la convolution 2D
+    convolved = convolve2d(img_2d, filter.array, mode='same', boundary='fill', fillvalue=0)
+    
+    # Reconstruction des canaux si nécessaire
+    if img_.ndim == 3:
+        return np.stack((convolved,)*3, axis=-1).astype(np.float32)
+    return convolved.astype(np.float32)
+
+
+
+def get_magnitude(img_x, img_y, show_angle = False):
+    magnitude = np.sqrt(img_x**2 + img_y**2)
+    if not show_angle:
+        return magnitude
+    else:
+        angles = np.arctan(img_y/img_x)[:,:,0]
+        angles = np.where(img_x[:,:,0] < 0, angles + np.pi, angles)
+    
+        # Normalisation HSV
+        h = (angles % (2*np.pi)) / (2*np.pi)    #[0,1]
+        s = np.ones_like(h)     # saturation
+        v = np.ones_like(h)     # value
+
+        # hsv to rgb
+        hsv = np.stack((h, s, v), axis=-1)
+        
+        rgb = hsv_to_rgb(hsv)
+        img = rgb
+        # img = (rgb).astype(np.uint8)
+        return img * np.sqrt(img_x**2 + img_y**2)
+
+def threshold(img, threshold):
+    if img.ndim == 3:
+        binary = np.where(img[:,:,0] > threshold, 1, 0)
+        return np.stack((binary,)*3, axis=-1).astype(np.float32)
+    else:
+        binary = np.where(img > threshold, 1, 0)
+        return binary
+    
+
+def zero_threshold(img, threshold):
+    binary = np.where(np.abs(img[:,:,0]) < threshold, 1, 0)
+    return np.stack((binary,)*3, axis=-1).astype(np.float32)
+
+def combine_threshold(img1, img2):
+    binary = np.where((img1[:,:,0] == img2[:,:,0]) & (img1[:,:,0] == 1), 1, 0)
+    return np.stack((binary,)*3, axis=-1).astype(np.float32)
+
+def extrem_threshold(img, threshold):
+    return np.where(img > threshold, [1,1,1], np.where(img < -threshold, [-1,-1,-1], 0)).astype(np.float32)
+
+def threshold_to_zero(img, threshold):
+    img_ = img.copy()
+    img_[img_ < threshold] = 0
+    return img_
+    
+
+def edge_detection_1(img, plot_differential = False,show_angle = False):
+    image_x = convolution(img, filterx)
+    image_y = convolution(img, filtery)
+    if plot_differential:
+        image_x_ = get_sign_color(image_x)
+        image_y_ = get_sign_color(image_y)
+        
+        plot(image_x_)
+        plot(image_y_)
+
+    img_ = get_magnitude(image_x, image_y, show_angle)
+    
+    return img_
+
+def edge_detection_2(img):
+    image_x = convolution(img, filterx)
+    image_y = convolution(img, filtery)
+    image_xy = convolution(img, filterxy)
+    image_xx = convolution(img, filterxx)
+    image_yy = convolution(img, filteryy)
+    magnitude = get_magnitude(image_x, image_y) + np.ones(img.shape) * 1e-8
+    
+    img_ = (image_x ** 2 * image_xx + 2 * image_x * image_y * image_xy + image_y ** 2 * image_yy)/magnitude**2
+    # img_ = np.stack((img_,)*3, axis=-1).astype(np.uint8)
+    return  img_
+
+    
+
+def get_sign_color(img_):
+    # (h, w, 3)
+    mask = img_[:,:,:] >= 0
+
+    img = np.where(
+    mask[:,:,:],
+        [0, 1, 0],
+        [1, 0, 0]
+    ) * np.abs(img_[:,:,0, np.newaxis])
+    return img
+
+def get_difference(img_):
+    img = img_.copy()
+    for i in range(len(img_)-1):
+        for j in range(len(img_[i])-1):
+            if (img_[i+1,j] * img_[i,j] == -1).all() or (img_[i+1,j+1] * img_[i,j] == -1).all() or (img_[i,j+1] * img_[i,j] == -1).all():
+                img[i:i+2,j:j+2] = [1, 1, 1]
+            else:
+                img[i,j] = [0, 0, 0]
+    return img
+
+def det_hess(img):
+    image_xy = convolution(img, filterxy)
+    image_xx = convolution(img, filterxx)
+    image_yy = convolution(img, filteryy)
+    
+    return np.abs(image_xx * image_yy - image_xy ** 2)
+
+def ease_in_out(x, alpha):
+    xalpha = x ** alpha
+    return xalpha / (xalpha + (1 - x) ** alpha)
+
+def transformee_fourier(img):
+    (M, N) = img[:,:,0].shape
+    fourier = np.zeros((M, N), dtype=np.complex128)
+    
+    # Création des matrices de fréquences u et v
+    u = np.arange(M)
+    v = np.arange(N)
+    
+    for x in range(M):
+        for y in range(N):
+            # Terme exponentiel en x (dépend de u)
+            exp_x = np.exp(-2j * np.pi * u * x / M)
+            # Terme exponentiel en y (dépend de v)
+            exp_y = np.exp(-2j * np.pi * v * y / N)
+            # Produit extérieur pour obtenir la combinaison (u, v)
+            exp_term = np.outer(exp_x, exp_y)
+            fourier += image[:,:,0][x, y] * exp_term
+            
+    return fourier
+
+
+def transformee_fourier(img):
+    fourier_transform = np.fft.fft2(img[:,:,0])
+
+    # 3. Décaler les fréquences et calculer la magnitude
+    fourier_shifted = np.fft.fftshift(fourier_transform)
+    
+    # magnitude_spectrum = np.log(1 + np.abs(fourier_shifted))  # Log pour meilleure visualisation
+    # print(magnitude_spectrum)
+    
+    return fourier_shifted
+
+def plot(img):
+    global plot_count
+    if not multiplot:
+        return
+    if plot_count > rows * columns:
+        print("TOO MUCH PLOTS")
+        return
+    fig.add_subplot(rows, columns, plot_count)
+    plot_count += 1
+    plt.imshow(img)
+    plt.yticks([])
+
+def do_operation(img):
+    img = np.stack((img,)*3, axis=-1).astype(np.float32)
+    # cH = convolution(cH, gaussian_filter_3x3)
+    img = threshold(img, 0.03)
+    img = img[:,:,0]
+    return img
+
+def plot_wt(img, level = 1):
+    # columns = 2
+    # rows = 2
+    # fig = plt.figure(figsize=(rows, columns))
+    coefs = get_wt(img, level)
+    
+    # cA, (cH, cV, cD) = coefs
+    
+    arr, coef_slices = pywt.coeffs_to_array(coefs, axes=(-2,-1))
+    arr = np.abs(arr)
+    
+    # max = np.max([np.max(arr[arr.shape[0]//2:,:]), np.max(arr[:,arr.shape[1]//2:])])
+    # arr[arr.shape[0]//2:,:arr.shape[1]//2] /= max
+    # arr[:arr.shape[0]//2,arr.shape[1]//2:] /= max
+    # arr[arr.shape[0]//2:,arr.shape[1]//2:] /= max
+    
+    
+    arr = np.stack((arr,)*3, axis=-1).astype(np.float32)
+    # arr = get_sign_color(arr)
+    plt.imshow(arr)
+    # plt.imshow(arr, cmap=plt.cm.gray)
+
+    # image1 = pywt.idwt2((cA, (cH, cV, cD)), 'db3', mode='periodization')
+    # image1 = np.stack((image1,)*3, axis=-1).astype(np.float32)
+
+    # plt.imshow(image1)
+    # plot(image1)
+
+def get_wt(img,level):
+    if level != -1:
+        coefs = pywt.wavedec2(img[:,:,0], 'sym4', mode='periodization', level=level)
+    else:
+        coefs = pywt.wavedec2(img[:,:,0], 'sym4', mode='periodization')
+        
+    return coefs
+
+def edge_detection_wt_like(img, level):
+    assert level > 0
+    x_imgs = []
+    y_imgs = []
+    mean_img = img.copy()
+    for _ in range(level):
+        x_img = convolution(mean_img, filterx).copy()
+        y_img = convolution(mean_img, filterx).copy()
+        
+        x_imgs.append(x_img)
+        y_imgs.append(y_img)
+        
+        mean_img = convolution(mean_img, filtermean)
+    
+    return x_imgs, y_imgs
+    
+
+## df/dx
+filterx = Filter(
+    np.array([0,1]),
+    np.array([
+        [1,-1]
+        ])
+)
+
+## df/dy
+filtery = Filter(
+    np.array([1,0]), 
+    np.array([
+        [1],
+        [-1]
+        ])
+)
+
+## d2fdxdy
+filterxy = Filter(
+    np.array([1,1]), 
+    np.array([
+        [1,-1],
+        [-1,1]
+        ])
+)
+
+## d2fdxdy
+filterxx = Filter(
+    np.array([0,1]), 
+    np.array([
+        [1,-2,1]
+        ])
+)
+
+## d2fdxdy
+filteryy = Filter(
+    np.array([1,0]), 
+    np.array([
+        [1],
+        [-2],
+        [1]
+        ])
+)
+
+laplacian_filter = Filter(
+    np.array([1,1]), 
+    np.array([
+        [1,1,1],
+        [1,-8,1],
+        [1,1,1]
+        ])
+)
+
+
+filtermean = Filter(
+    np.array([1,1]), 
+    (1/9)*np.array([
+        [1,1,1],
+        [1,1,1],
+        [1,1,1]
+        ])
+)
+
+gaussian_filter_3x3 = Filter(
+    np.array([1,1]), 
+    (1/16)*np.array([
+        [1,2,1],
+        [2,4,2],
+        [1,2,1]
+        ])
+)
+
+
+custom_filter1 = Filter(
+    np.array([1,1]), 
+    np.array([
+        [1,0,0],
+        [1,0,-3],
+        [1,0,0]
+        ])
+)
+
+
+custom_filter2 = Filter(
+    np.array([1,1]), 
+    np.array([
+        [1,0,0],
+        [1,-3,0],
+        [1,0,0]
+        ])
+)
+
+mean_filter_2x2 = Filter(
+    np.array([0,0]), 
+    (1/4)*np.array([
+        [1,1],
+        [1,1]
+        ])
+)
+
+
+
+plot_count = 1
+multiplot = True
+# multiplot = False
+
+if multiplot:
+    columns = 2
+    rows = 2
+    fig = plt.figure(figsize=(rows, columns))
+
+
+
+## black and white image
+# start_time = time.time()
+image = black_and_white(image)
+# plot(image)
+
+# image_g = convolution(image, gaussian_filter_3x3)
+
+
+# image1 = edge_detection_1(image)
+# image1 = threshold(image1, .065)
+# plot(image1)
+
+# plot(image)
+## noise
+noise = np.random.normal(0, .1, image.shape)[:,:,:1]
+image += noise
+image = np.clip(image, 0, 1).astype(image.dtype)
+
+# plt.imshow(image) plot(image)
+
+
+
+
+# image0 = convolution(image, filtermean)
+# plot(image0)
+
+
+
+
+
+# image0 = convolution(image, filtermean)
+
+# plt.imshow(image0)
+# plot(image0)
+
+
+
+
+# end_time = time.time()
+# print(end_time - start_time)
+
+
+# image = convolution(image, gaussian_filter_3x3)
+# plot(image3)
+
+# image1 = convolution(image, testfilter)
+# image1 = threshold(image1, .025)
+
+
+# image1 = convolution(image, laplacian_filter)
+# image1 = zero_threshold(image1, .5)
+# plt.imshow(image1)
+
+
+# image2 = np.abs(convolution(image, custom_filter1))
+# image2 = threshold(image2, .1)
+# print(np.max(image2))
+# image2 /= np.max(image2)
+# image2 = threshold(image2, .25)
+# plt.imshow(image2)
+# plot(image2)
+
+
+# image3 = edge_detection_1(image)
+# image3 = convolution(image, filterxy)
+# image3 = get_sign_color(image3)
+# image3 = threshold(image3, .3)
+# image3 /= np.max(image3)
+# plt.imshow(image3)
+# plot(image3)
+
+
+
+# image4 = np.abs(convolution(image, custom_filter2))
+# image4 = threshold(image4, .07)
+# print(np.max(image4), np.where(image4 == np.max(image4)))
+# image4 /= np.max(image4)
+# image4 *= 2
+# plt.imshow(image4[:,:,0], cmap='magma')
+# plt.imshow(image4)
+# plot(image4)
+
+
+# image = ease_in_out(image, 2)
+# plot(image)
+
+# image = convolution(image, gaussian_filter_3x3)
+# plot(image)
+# plt.imshow(image)
+
+# image1 = edge_detection_2(image)
+# image1 = extrem_threshold(image1, .008)
+# image1 /= np.max(image1)
+# image1 = get_sign_color(image1)
+# image1 /= np.max(image1)
+
+# image1 = get_difference(image1)
+
+
+
+# image1 = threshold(image1, .01)
+# plt.imshow(image1)
+
+# plot(image1)
+
+
+# plot(image)
+# plot(image)
+
+# image = convolution(image, gaussian_filter_3x3)
+
+# image2 = det_hess(image)
+# image2 = threshold(image2, .0005)
+# image2 = image2/np.max(image2)
+# image2 *= 10
+
+# print(np.max(image2), np.where((image2 == np.max(image2))))
+
+# image = convolution(image, gaussian_filter_3x3)
+# image2 = edge_detection_2(image)
+# image2 = threshold(image2, .025)
+# plt.imshow(image2)
+# plot(image2)
+
+
+
+# image3 = combine_threshold(image1, image2)
+# image3 = convolution(image, filterx)
+# image3 = threshold(image3, 0.005)
+# plot(image3)
+
+
+# plt.imshow(image1)
+# plot(image2)
+
+# image4 = edge_detection_1(image)
+# image4 = convolution(image, filterxx)
+# image4 = threshold(image4, .008)
+# plt.imshow(image4)
+# plot(image4)
+
+
+# fourier = transformee_fourier(image)
+
+
+# fourier = np.log(1 + np.abs(fourier))
+# fourier /= np.max(fourier)
+# # print(fourier)
+# plt.imshow(fourier, cmap='magma')
+# plt.colorbar()
+
+
+
+
+## wavelet
+# plot_wt(image,-1)
+
+
+
+# level = 1
+# x_imgs, y_imgs = edge_detection_wt_like(image, level)
+
+# edge_image = np.zeros(image.shape)
+
+# def weight_function(t):
+#     return 1/t
+
+# weights = [weight_function(level-i) for i in range(level)]
+# weights = [weight_function(i+1) for i in range(level)]
+
+# # weights = [0.1,0.2,0.3,0.4,0.5,1,0.2]
+
+
+# for i in range(len(x_imgs)):
+#     # x_img /= np.max(x_img)
+#     # plot(x_img)
+#     # plt.title("x" + str(i_x))
+#     if i < len(weights):
+#         weight = weights[i]
+#     else:
+#         weight = weights[-1]
+#     edge_image += np.sqrt(x_imgs[i]**2 + y_imgs[i]**2) * weight
+    
+#     edge_image = threshold(edge_image, 0.1)
+    
+    
+# # for i_y, y_img in enumerate(y_imgs):
+# #     # y_img /= np.max(y_img)
+# #     # plot(y_img)
+# #     # plt.title("y" + str(i_y))
+    
+
+# plt.imshow(edge_image)
+
+
+
+
+
+# plot(image)
+# coefs = get_wt(image,5)
+
+# ## denoise
+# # sigma = np.median(np.abs(coefs[-1][0])) / 0.6745
+# # N = np.max([image.shape[0], image.shape[1]])
+# # T = 0.1 * sigma * np.sqrt(2 * np.log(N))
+# # print('T', T)
+
+
+# cA = coefs[0]
+# details = coefs[1:]
+
+# new_details = []
+
+# for i, (cH, cV, cD) in enumerate(details):
+#     if i == 0:
+#         # cH = convolution(cH, mean_filter_2x2)
+#         # cV = convolution(cV, mean_filter_2x2)
+#         # cD = convolution(cD, mean_filter_2x2)
+#         threshold_ = T
+#         cH = threshold_to_zero(cH, threshold_)
+#         cV = threshold_to_zero(cV, threshold_)
+#         cD = threshold_to_zero(cD, threshold_)
+#     new_details.append((cH, cV, cD))
+    
+# coefs_reconstructed = [cA] + new_details
+
+
+# coefs_reconstructed = [coefs[0]] + [
+#     (pywt.threshold(cH, T, mode='soft'),
+#      pywt.threshold(cV, T, mode='soft'),
+#      pywt.threshold(cD, T, mode='soft'))
+#     for cH, cV, cD in coefs[1:]
+# ]
+
+# image1 = pywt.waverec2(coefs_reconstructed, 'sym4', mode='periodization')
+# image1 = np.stack((image1,)*3, axis=-1).astype(np.float32)
+
+# plt.imshow(image1)
+# plot(image1)
+
+
+widths = np.arange(0, image.shape[1])
+cwtmatr, freqs = pywt.cwt(image[50,:,0])
+
+surface = np.sum(np.abs(cwtmatr))
+
+# Affichage
+plt.imshow(np.abs(cwtmatr), extent=[0, image.shape[1], 1, 31], cmap='jet')
+
+
+
+if multiplot:
+    plt.subplots_adjust(
+        left=0, right=1, bottom=0, top=1,
+        wspace=0, hspace=0
+    )
+
+
+
+# plt.imshow(image1)
+# plot(image1)
+
+
+## plot of color gradient
+# gradient = np.linspace(0, 2*np.pi, 360)
+# h_grad = gradient / (2*np.pi)
+# rgb_grad = hsv_to_rgb(np.stack((h_grad, np.ones(360), np.ones(360)), -1))
+
+# height_factor = 60
+# rgb_grad = np.repeat(rgb_grad[np.newaxis, :, :], height_factor, axis=0)
+# # plot(rgb_grad)
+# # plt.imshow(rgb_grad)
+
+
+
+
+
+
+
+# plt.colorbar()
+plt.show()
