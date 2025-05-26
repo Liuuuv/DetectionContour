@@ -1,0 +1,46 @@
+from contours import*
+
+
+
+## + + GREEN
+## - - RED
+## + - YELLOW
+
+img_xx = convolution(image, filterxx)
+img_yy = convolution(image, filteryy)
+img_xy = convolution(image, filterxy)
+
+def eigenvalues(img):
+    img_ = np.zeros_like(img)
+    for i in range(len(image)):
+        for j in range(len(image[0])):
+            
+            
+            hessian = np.array([
+                [img_xx[i,j][0], img_xy[i,j][0]],
+                [img_xy[i,j][0], img_yy[i,j][0]]
+            ])
+            
+            eigs = np.linalg.eigvals(hessian)
+            np.sort(eigs)
+            
+            if eigs[1] < 0:     # both are negative
+                img_[i,j] = [- eigs[0] - eigs[1], 0, 0]
+            elif eigs[0] < 0: # 0 neg, 1 pos
+                img_[i,j] = [-eigs[0], eigs[1], 0]
+            else:
+                img_[i,j] = [0,eigs[0] + eigs[1], 0]
+            
+    img_ /= np.max(img_)
+    
+    return img_
+
+image1 = eigenvalues(image)
+image2 = eigenvalues(convolution(image, filtermean))
+
+plot(image)
+plot(image1)
+plot(image2)
+# plt.imshow(img_)
+
+plt.show()
