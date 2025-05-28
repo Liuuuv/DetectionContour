@@ -431,7 +431,7 @@ mean_filter_2x2 = Filter(
 
 testfilter = Filter(
     np.array([1,1]), 
-    0.25*np.array([
+    np.array([
         [0,1,0],
         [1,0,1],
         [0,1,0]
@@ -633,4 +633,3 @@ if multiplot:
 
 
 # plt.colorbar()
-# plt.show()

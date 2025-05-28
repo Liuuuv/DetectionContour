@@ -75,7 +75,7 @@ def analyse_hessienne(img_, sigma=1.0):
     
     # Classification
     contours = (det < -0.0000001)  # Contours nets
-    coins = (det > 0.001) & (np.abs(tr) > 0.001)  # Jonctions
+    coins = (det > 0.000001) & (np.abs(tr) > 0.001)  # Jonctions
     
     return contours, coins
 

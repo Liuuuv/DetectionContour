@@ -633,4 +633,4 @@ if multiplot:
 
 
 # plt.colorbar()
-# plt.show()
+plt.show()

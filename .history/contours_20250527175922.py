@@ -7,11 +7,11 @@ import pywt
 import pywt.data
 
 
-image = plt.imread("justdisappear.png").astype(np.float32)  # taille (573, 640, 3)
+# image = plt.imread("justdisappear.png").astype(np.float32)  # taille (573, 640, 3)
 # image = plt.imread("shinsei.png").astype(np.float32)
 # image = plt.imread("upiko.png").astype(np.float32)
 # image = plt.imread("black_and_white.png").astype(np.float32)
-# image = plt.imread("bnw_square.png").astype(np.float32)
+image = plt.imread("bnw_square.png").astype(np.float32)
 
 
 image = image[::1, ::1, :]  # 5:taille (115, 128, 3), 4:taille (144, 160, 3)
@@ -429,15 +429,6 @@ mean_filter_2x2 = Filter(
         ])
 )
 
-testfilter = Filter(
-    np.array([1,1]), 
-    0.25*np.array([
-        [0,1,0],
-        [1,0,1],
-        [0,1,0]
-        ])
-)
-
 
 
 plot_count = 1
@@ -496,9 +487,7 @@ image = black_and_white(image)
 # image = convolution(image, gaussian_filter_3x3)
 # plot(image3)
 
-plot(image)
-image1 = convolution(image, testfilter)
-plot(image1)
+# image1 = convolution(image, testfilter)
 # image1 = threshold(image1, .025)
 
 
@@ -633,4 +622,3 @@ if multiplot:
 
 
 # plt.colorbar()
-# plt.show()

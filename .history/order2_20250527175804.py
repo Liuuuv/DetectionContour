@@ -59,8 +59,7 @@ def eigenvalues(img):
 
 from scipy.ndimage import gaussian_filter
 
-def analyse_hessienne(img_, sigma=1.0):
-    img = img_[:,:,0]
+def analyse_hessienne(img, sigma=1.0):
     # Lissage gaussien
     img = gaussian_filter(img, sigma)
     
@@ -74,16 +73,13 @@ def analyse_hessienne(img_, sigma=1.0):
     det = Ixx * Iyy - Ixy**2
     
     # Classification
-    contours = (det < -0.0000001)  # Contours nets
-    coins = (det > 0.001) & (np.abs(tr) > 0.001)  # Jonctions
+    contours = (det < -0.01)  # Contours nets
+    coins = (det > 0.01) & (np.abs(tr) > 0.1)  # Jonctions
     
     return contours, coins
 
 # Application sur une image de contours
-
 contours, coins = analyse_hessienne(image)
-contours = np.stack((contours,)*3, axis=-1).astype(np.float32)
-coins = np.stack((coins,)*3, axis=-1).astype(np.float32)
 plot(contours)
 plot(coins)
 
