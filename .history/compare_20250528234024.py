@@ -1,0 +1,17 @@
+from contours import*
+
+image_ref = plt.imread("black_and_white_ref.png").astype(np.float32)
+
+image_contour = edge_detection_1(image)
+## neg : misses, pos : too much, 0 : good
+minus_image = image_contour - image_ref
+
+
+miss_weight = .5
+too_much_weight = 1
+
+too_much_array = minus_image[minus_image > 0]
+miss_array = minus_image[minus_image < 0]
+score = np.sum(too_much_array * too_much_array + miss_array * miss_array)
+
+print(score)
