@@ -14,7 +14,7 @@ image = plt.imread("justdisappear.png").astype(np.float32)  # taille (573, 640, 
 # image = plt.imread("bnw_square.png").astype(np.float32)
 
 
-image = image[::3, ::3, :]  # 5:taille (115, 128, 3), 4:taille (144, 160, 3)
+image = image[::1, ::1, :]  # 5:taille (115, 128, 3), 4:taille (144, 160, 3)
 image[:,:]/255
 
 
@@ -267,6 +267,31 @@ def plot(img, *args, **kwargs):
     fig.add_subplot(rows, columns, plot_count)
     plot_count += 1
     plt.imshow(img, *args, **kwargs)
+    # plt.yticks([])
+    
+
+def line_plot(img, *args, **kwargs):
+    global plot_count
+    if not multiplot:
+        return
+    if plot_count > rows * columns:
+        print("TOO MUCH PLOTS")
+        return
+    fig.add_subplot(rows, columns, plot_count)
+    plot_count += 1
+    plt.plot(img, *args, **kwargs)
+    # plt.yticks([])
+
+def scatter_plot(img, *args, **kwargs):
+    global plot_count
+    if not multiplot:
+        return
+    if plot_count > rows * columns:
+        print("TOO MUCH PLOTS")
+        return
+    fig.add_subplot(rows, columns, plot_count)
+    plot_count += 1
+    plt.scatter(img, *args, **kwargs)
     # plt.yticks([])
 
 def do_operation(img):
@@ -545,7 +570,7 @@ image = black_and_white(image)
 # plt.imshow(image)
 
 # image1 = edge_detection_2(image)
-# image1 = extrem_threshold(image1, .008)
+# image1 = extrem_threshold(image1, .02)
 # image1 /= np.max(image1)
 # image1 = get_sign_color(image1)
 # image1 /= np.max(image1)
@@ -556,6 +581,8 @@ image = black_and_white(image)
 
 # image1 = threshold(image1, .01)
 # plt.imshow(image1)
+
+plt.imshow(image)
 
 # plot(image1)
 
@@ -634,4 +661,4 @@ if multiplot:
 
 
 # plt.colorbar()
-# plt.show()
+plt.show()

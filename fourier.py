@@ -2,9 +2,9 @@ from contours import*
 
 # image = convolution(image, gaussian_filter_3x3)
 
-image = np.zeros_like(image)
-image[image.shape[0]//2,image.shape[1]//2] = [1,1,1]
-print(image)
+# image = np.zeros_like(image)
+# image[image.shape[0]//2,image.shape[1]//2] = [1,1,1]
+# print(image)
 
 
 fourier = transformee_fourier(image)
